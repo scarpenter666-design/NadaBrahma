@@ -4,7 +4,7 @@ Binauraler Tongenerator zur Meditation. Single-File-Build wie IRONLOG.
 
 ## Dateien
 - `index.html` – komplette App
-- `sw.js` – Network-First Service Worker (Version: `nadabrahma-v4`)
+- `sw.js` – Network-First Service Worker (Version: `nadabrahma-v5`)
 - `manifest.json` – PWA-Manifest
 - `icon.svg`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png` (Android), `apple-touch-icon.png` (iPhone)
 
@@ -21,7 +21,7 @@ Binauraler Tongenerator zur Meditation. Single-File-Build wie IRONLOG.
 - **iPhone (Safari):** Teilen-Symbol → **Zum Home-Bildschirm**
 
 ## Updates
-Bei jeder Änderung in `sw.js` die Zeile `const VERSION = "nadabrahma-v4";` hochzählen (v2, v3 …).
+Bei jeder Änderung in `sw.js` die Zeile `const VERSION = "nadabrahma-v5";` hochzählen (v2, v3 …).
 Die App zeigt dann unten den Hinweis **Neue Version verfügbar → Neu laden**.
 
 ## Programme
