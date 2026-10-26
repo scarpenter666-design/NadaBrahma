@@ -1,0 +1,18 @@
+{
+  "name": "Nada Brahma",
+  "short_name": "Nada Brahma",
+  "description": "Die Welt ist Klang. Binaurale Schwebungen zur Meditation – mit Programmen, Timer und Fade.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#18191b",
+  "theme_color": "#18191b",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

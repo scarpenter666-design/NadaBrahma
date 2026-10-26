@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nada Brahma</title>
+<meta name="theme-color" content="#18191b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nada Brahma">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font-size:14px;-webkit-text-size-adjust:100%}
+img{max-width:100%}[hidden]{display:none!important}
+</style>
+<style>
+/* Layout: ein Gerät – Messinstrument oben, großer Drehregler mittig, Programme und Bedienleiste unten. Bewusst nur dunkel (Gerätegehäuse). */
+:root {
+  color-scheme: dark;
+  --case: #18191b;
+  --edge: #0e0f10;
+  --engrave: #a9a395;
+  --engrave-dim: #6c685f;
+  --face: #efe5cc;
+  --face-ink: #26221b;
+  --needle: #c4321d;
+  --amber: #f0a43a;
+  --amber-glow: rgba(240,164,58,.45);
+  --f-label: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --k: min(62vw, 236px);
+}
+html, body { min-height: 100%; }
+body {
+  background: radial-gradient(120% 80% at 50% 0%, #222326 0%, var(--case) 55%, #111213 100%) fixed, var(--case);
+  color: var(--engrave);
+  font-family: var(--f-label);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.device {
+  max-width: 440px; margin: 0 auto; padding-block: 22px 36px;
+  display: flex; flex-direction: column; align-items: center; gap: 22px;
+}
+.plate {
+  width: 100%; display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+  text-transform: uppercase; letter-spacing: .16em; font-size: 12px; font-weight: 600;
+  color: var(--engrave-dim);
+}
+.plate b { color: var(--engrave); font-weight: 700; letter-spacing: .2em; font-size: 14px; }
+
+/* Messinstrument */
+.meter {
+  width: 100%; border-radius: 10px; padding: 10px;
+  background: linear-gradient(180deg, #0c0d0e, #1d1e20);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,.8), 0 1px 0 rgba(255,255,255,.05);
+}
+.meter-window { position: relative; border-radius: 6px; overflow: hidden; box-shadow: 0 0 0 1px #000; transition: box-shadow .6s; }
+.meter svg { display: block; width: 100%; height: auto; }
+.meter-window::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(160deg, rgba(255,255,255,.28) 0%, rgba(255,255,255,0) 38%),
+              radial-gradient(120% 90% at 50% 120%, rgba(0,0,0,.25), transparent 60%);
+}
+.meter.on .meter-window { box-shadow: 0 0 0 1px #000, 0 0 26px var(--amber-glow); }
+.readout {
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  margin-top: 10px; padding-inline: 4px;
+  font-family: var(--f-num); font-size: 12px; color: var(--engrave-dim);
+  font-variant-numeric: tabular-nums;
+}
+.readout strong { color: var(--amber); font-weight: 500; }
+
+/* Modus-Schalter */
+.switch {
+  display: flex; padding: 3px; border-radius: 999px; background: var(--edge);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.9), 0 1px 0 rgba(255,255,255,.05);
+}
+.switch button {
+  font: 600 13px/1 var(--f-label); text-transform: uppercase; letter-spacing: .14em;
+  color: var(--engrave-dim); background: none; border: 0; border-radius: 999px;
+  padding: 9px 16px; cursor: pointer;
+}
+.switch button[aria-pressed="true"] {
+  color: #1a1408; background: linear-gradient(180deg, #f5b552, #d98a23);
+  box-shadow: 0 0 12px var(--amber-glow);
+}
+
+/* Drehknopf */
+.knob-area { position: relative; width: calc(var(--k) * 1.3); aspect-ratio: 1; max-width: 100%; display: grid; place-items: center; }
+.knob-scale { position: absolute; inset: 0; width: 100%; height: 100%; }
+.knob {
+  position: relative; width: var(--k); aspect-ratio: 1; border-radius: 50%;
+  touch-action: none; cursor: grab; outline: none;
+  box-shadow: 0 18px 30px rgba(0,0,0,.65), 0 4px 8px rgba(0,0,0,.5), 0 0 0 4px #0b0b0c;
+}
+.knob:active { cursor: grabbing; }
+.knob:focus-visible { box-shadow: 0 18px 30px rgba(0,0,0,.65), 0 0 0 4px #0b0b0c, 0 0 0 7px var(--amber); }
+.knob-body {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: repeating-conic-gradient(#3c3d40 0deg 2.5deg, #1c1d1f 2.5deg 5deg);
+  will-change: transform;
+}
+.knob-cap {
+  position: absolute; inset: 9%; border-radius: 50%;
+  background:
+    conic-gradient(from 20deg, rgba(255,255,255,.22), rgba(0,0,0,.12) 25%, rgba(255,255,255,.22) 50%, rgba(0,0,0,.12) 75%, rgba(255,255,255,.22)),
+    repeating-radial-gradient(circle at 50% 50%, #c4c5c2 0 1px, #b3b4b1 1px 2px);
+  box-shadow: inset 0 2px 2px rgba(255,255,255,.55), inset 0 -3px 6px rgba(0,0,0,.35), 0 0 0 1px rgba(0,0,0,.6);
+}
+.dimple {
+  position: absolute; top: 11%; left: 50%; width: 27%; aspect-ratio: 1; transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 70%, #d3d4d1 0%, #a2a39f 45%, #7d7e7a 100%);
+  box-shadow: inset 0 4px 7px rgba(0,0,0,.5), inset 0 -2px 3px rgba(255,255,255,.55), 0 1px 0 rgba(255,255,255,.5);
+}
+.tick-mark {
+  position: absolute; top: 2%; left: 50%; width: 3px; height: 6%; transform: translateX(-50%);
+  background: var(--amber); border-radius: 2px; box-shadow: 0 0 6px var(--amber-glow);
+}
+.knob-light {
+  position: absolute; inset: 9%; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 32% 26%, rgba(255,255,255,.4), rgba(255,255,255,0) 45%),
+              radial-gradient(circle at 70% 85%, rgba(0,0,0,.28), rgba(0,0,0,0) 55%);
+}
+.knob.auto .tick-mark { animation: pulse 2.4s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+
+/* Tasten */
+.row { width: 100%; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.key {
+  flex: 1 1 0; min-width: 84px;
+  font: 600 14px/1 var(--f-label); letter-spacing: .08em; color: var(--engrave);
+  background: linear-gradient(180deg, #2b2c30, #1e1f22); border: 1px solid #0b0b0c; border-radius: 8px;
+  padding: 11px 8px; cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 2px 3px rgba(0,0,0,.5);
+}
+.key small { display: block; margin-top: 4px; font-size: 11px; font-weight: 500; color: var(--engrave-dim); letter-spacing: .1em; text-transform: uppercase; }
+.key:active { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(0,0,0,.6); }
+.key:disabled, .prog:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.key:focus-visible, select:focus-visible, input:focus-visible, .start:focus-visible, .prog:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+/* Programme */
+.section { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+.section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.section-head h2 { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--engrave); }
+.section-head span { font: 400 11px var(--f-num); color: var(--engrave-dim); }
+.progs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.prog {
+  text-align: left; cursor: pointer; color: var(--engrave);
+  background: linear-gradient(180deg, #232427, #1a1b1d); border: 1px solid #0b0b0c; border-radius: 8px;
+  padding: 10px 10px 8px; display: flex; flex-direction: column; gap: 4px; min-width: 0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 2px 3px rgba(0,0,0,.45);
+}
+.prog:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.prog-top { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+.prog-name { font: 600 15px/1.1 var(--f-label); letter-spacing: .04em; }
+.prog-dur { font: 500 11px var(--f-num); color: var(--engrave-dim); white-space: nowrap; }
+.prog-curve { font: 400 11px var(--f-num); color: var(--engrave-dim); }
+.prog svg { width: 100%; height: 26px; display: block; }
+.prog svg path { fill: none; stroke: var(--engrave-dim); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.prog[aria-pressed="true"] { border-color: #6b4a16; box-shadow: 0 0 0 1px var(--amber), 0 0 14px rgba(240,164,58,.2); }
+.prog[aria-pressed="true"] svg path { stroke: var(--amber); }
+
+.controls { width: 100%; display: grid; grid-template-columns: 1fr auto auto; gap: 14px; align-items: end; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field label, .lbl { font-size: 11px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--engrave-dim); }
+input[type="range"] { width: 100%; accent-color: var(--amber); }
+select {
+  font: 500 13px var(--f-num); color: var(--engrave); background: #121314;
+  border: 1px solid #000; border-radius: 6px; padding: 7px 8px;
+}
+select:disabled { opacity: .45; }
+.toggle { display: flex; align-items: center; gap: 6px; font: 500 13px var(--f-num); color: var(--engrave); cursor: pointer; padding-block: 6px; }
+.toggle input { accent-color: var(--amber); width: 18px; height: 18px; }
+
+.start-row { display: flex; align-items: center; gap: 18px; width: 100%; justify-content: center; }
+.start {
+  flex: none; width: 92px; aspect-ratio: 1; border-radius: 50%; cursor: pointer;
+  font: 700 15px/1 var(--f-label); letter-spacing: .18em; text-transform: uppercase;
+  color: #3a2c14; border: 0;
+  background: radial-gradient(circle at 45% 35%, #4a3a20, #2a2114 70%);
+  box-shadow: 0 0 0 5px #0b0b0c, 0 0 0 7px #2a2b2e, 0 8px 16px rgba(0,0,0,.6), inset 0 2px 3px rgba(255,255,255,.12);
+  transition: background .4s, color .4s, box-shadow .4s;
+}
+.start.on {
+  color: #2a1a04;
+  background: radial-gradient(circle at 45% 35%, #ffd189, #f0a43a 55%, #c97a16);
+  box-shadow: 0 0 0 5px #0b0b0c, 0 0 0 7px #2a2b2e, 0 0 34px var(--amber-glow), inset 0 2px 3px rgba(255,255,255,.5);
+}
+.status { font-family: var(--f-num); font-size: 13px; color: var(--engrave-dim); min-width: 150px; font-variant-numeric: tabular-nums; display: flex; flex-direction: column; gap: 2px; }
+.status strong { font-size: 22px; color: var(--engrave); font-weight: 500; }
+.status em { font-style: normal; font-size: 11px; letter-spacing: .04em; }
+.bar { width: 100%; height: 4px; background: #0b0b0c; border-radius: 2px; overflow: hidden; margin-top: 4px; }
+.bar i { display: block; height: 100%; width: 0; background: var(--amber); box-shadow: 0 0 6px var(--amber-glow); }
+
+.note {
+  width: 100%; font: 400 12px/1.55 var(--f-num); color: var(--engrave-dim);
+  border-top: 1px solid #000; padding-top: 14px; max-width: 65ch; margin: 0;
+}
+.note b { color: var(--engrave); font-weight: 500; }
+
+.update {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  display: flex; justify-content: center; align-items: center; gap: 12px;
+  padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  background: #0b0b0c; border-top: 1px solid #2a2b2e; font: 500 13px var(--f-num); color: var(--engrave);
+}
+.update button { font: 600 13px var(--f-label); letter-spacing: .12em; text-transform: uppercase; background: var(--amber); color: #1a1408; border: 0; border-radius: 6px; padding: 8px 12px; cursor: pointer; }
+
+@media (max-width: 380px) {
+  .controls { grid-template-columns: 1fr 1fr; }
+  .controls .field:first-child { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) { .start, .meter-window { transition: none; } .knob.auto .tick-mark { animation: none; } }
+</style>
+</head>
+<body>
+<div class="device">
+  <div class="plate"><b>Nada Brahma</b><span>Die Welt ist Klang</span></div>
+
+  <div class="meter" id="meter">
+    <div class="meter-window">
+      <svg viewBox="0 0 300 168" aria-hidden="true">
+        <defs>
+          <radialGradient id="faceGrad" cx="50%" cy="100%" r="95%">
+            <stop offset="0" stop-color="#fbf3dc"/>
+            <stop offset="1" stop-color="#e2d5b4"/>
+          </radialGradient>
+        </defs>
+        <rect width="300" height="168" fill="url(#faceGrad)"/>
+        <g id="zones"></g>
+        <g id="ticks"></g>
+        <text id="faceMode" x="150" y="122" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="13" letter-spacing="2.5" fill="#26221b">SCHWEBUNG</text>
+        <text x="150" y="137" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="500" font-size="11" letter-spacing="1.5" fill="#6b6253">Hz</text>
+        <g id="needle">
+          <line x1="150" y1="168" x2="150" y2="30" stroke="#c4321d" stroke-width="2" stroke-linecap="round"/>
+          <line x1="150" y1="168" x2="150" y2="184" stroke="#26221b" stroke-width="5"/>
+        </g>
+        <rect x="0" y="156" width="300" height="12" fill="#1a1b1d"/>
+        <circle cx="150" cy="168" r="13" fill="#2a2b2e" stroke="#000" stroke-width="1"/>
+        <circle cx="150" cy="168" r="5" fill="#4a4b4f"/>
+      </svg>
+    </div>
+    <div class="readout">
+      <span id="roMain"><strong>6,0 Hz</strong> Schwebung</span>
+      <span id="roLR">L 197,0 · R 203,0 Hz</span>
+    </div>
+  </div>
+
+  <div class="switch" role="group" aria-label="Was der Regler einstellt">
+    <button type="button" id="mBeat" aria-pressed="true">Schwebung</button>
+    <button type="button" id="mBase" aria-pressed="false">Grundton</button>
+  </div>
+
+  <div class="knob-area">
+    <svg class="knob-scale" viewBox="0 0 200 200" id="knobScale" aria-hidden="true"></svg>
+    <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Frequenzregler" aria-valuemin="0.5" aria-valuemax="30" aria-valuenow="6">
+      <div class="knob-body" id="knobBody">
+        <div class="knob-cap"><div class="dimple"></div></div>
+        <div class="tick-mark"></div>
+      </div>
+      <div class="knob-light"></div>
+    </div>
+  </div>
+
+  <div class="start-row">
+    <button class="start" id="start" type="button" aria-pressed="false">Start</button>
+    <div class="status" aria-live="polite">
+      <span id="stLabel">Bereit · Manuell</span>
+      <strong id="clock">20:00</strong>
+      <em id="stPhase">&nbsp;</em>
+      <div class="bar" id="bar" hidden><i id="barFill"></i></div>
+    </div>
+  </div>
+
+  <section class="section" aria-labelledby="progHead">
+    <div class="section-head"><h2 id="progHead">Programme</h2><span id="progHint">Tippen zum Auswählen</span></div>
+    <div class="progs" id="progs"></div>
+  </section>
+
+  <section class="section" aria-labelledby="manHead">
+    <div class="section-head"><h2 id="manHead">Manuell</h2><span>feste Schwebung</span></div>
+    <div class="row" role="group" aria-label="Voreinstellungen">
+      <button class="key" type="button" data-beat="2">δ 2 Hz<small>Delta</small></button>
+      <button class="key" type="button" data-beat="6">θ 6 Hz<small>Theta</small></button>
+      <button class="key" type="button" data-beat="10">α 10 Hz<small>Alpha</small></button>
+    </div>
+  </section>
+
+  <div class="controls">
+    <div class="field">
+      <label for="vol">Lautstärke</label>
+      <input type="range" id="vol" min="0" max="100" value="30">
+    </div>
+    <div class="field">
+      <label for="timer">Timer</label>
+      <select id="timer">
+        <option value="0">Aus</option>
+        <option value="300">5 min</option>
+        <option value="600">10 min</option>
+        <option value="900">15 min</option>
+        <option value="1200" selected>20 min</option>
+        <option value="1800">30 min</option>
+        <option value="2700">45 min</option>
+      </select>
+    </div>
+    <div class="field">
+      <span class="lbl">Hintergrund</span>
+      <label class="toggle" for="noise"><input type="checkbox" id="noise"> Rauschen</label>
+    </div>
+  </div>
+
+  <p class="note">
+    <b>Kopfhörer aufsetzen, leise beginnen.</b> Links und rechts laufen zwei leicht verschiedene Töne. Die Differenz nimmst du als langsames Pulsieren wahr, die Schwebung. Ohne Kopfhörer funktioniert das nicht. Programme verändern die Schwebung langsam über die Zeit. Drehst du während eines Programms am Regler, übernimmst du manuell.
+  </p>
+</div>
+
+<div class="update" id="update" hidden>Neue Version verfügbar <button type="button" id="reload">Neu laden</button></div>
+<audio id="out" playsinline></audio>
+
+<script>
+(() => {
+  const NS = "http://www.w3.org/2000/svg";
+  const MAX_GAIN = 0.28;           // harte Obergrenze
+  const FADE_IN = 6, FADE_OUT = 8;
+  const RANGE = { beat: { min: 0.5, max: 30, step: 0.1 }, base: { min: 60, max: 600, step: 1 } };
+
+  // Programme: Segmente [Dauer s, Schwebung von, bis, Phase]
+  const PROGRAMS = [
+    { id: "pause",  name: "Kurze Pause",      base: 220, noise: false, seg: [[60, 12, 10, "Ankommen"], [180, 10, 10, "Ruhen"], [60, 10, 12, "Zurückkommen"]] },
+    { id: "tief",   name: "Tiefenmeditation", base: 200, noise: false, seg: [[180, 10, 6, "Absinken"], [300, 6, 6, "Tiefe"], [120, 6, 10, "Auftauchen"]] },
+    { id: "fokus",  name: "Fokus",            base: 240, noise: false, seg: [[120, 10, 14, "Wachwerden"], [600, 14, 14, "Fokus halten"], [180, 14, 12, "Ausklingen"]] },
+    { id: "lang",   name: "Lange Meditation", base: 180, noise: false, seg: [[240, 10, 7, "Absinken"], [360, 7, 5, "Vertiefen"], [360, 5, 5, "Tiefe"], [240, 5, 10, "Auftauchen"]] },
+    { id: "schlaf", name: "Einschlafen",      base: 150, noise: true,  seg: [[600, 8, 4, "Abschalten"], [600, 4, 2, "Sinken"], [600, 2, 2, "Schlaf"]] },
+  ];
+  PROGRAMS.forEach(p => p.total = p.seg.reduce((s, x) => s + x[0], 0));
+
+  const state = { mode: "beat", beat: 6, base: 200, vol: 30, timer: 1200, noise: false, running: false, prog: null };
+  try {
+    const saved = JSON.parse(localStorage.getItem("nadabrahma") || "{}");
+    for (const k of ["beat", "base", "vol", "timer", "noise"]) if (k in saved) state[k] = saved[k];
+  } catch (e) {}
+  const save = () => { try { localStorage.setItem("nadabrahma", JSON.stringify({ beat: state.beat, base: state.base, vol: state.vol, timer: state.timer, noise: state.noise })); } catch (e) {} };
+
+  const $ = id => document.getElementById(id);
+  const fmt = (v, d = 1) => v.toFixed(d).replace(".", ",");
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const mmss = s => { s = Math.max(0, Math.round(s)); return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; };
+
+  // Wert <-> Reglerstellung (0..1)
+  const toT = (mode, v) => mode === "beat"
+    ? (v - RANGE.beat.min) / (RANGE.beat.max - RANGE.beat.min)
+    : Math.log(v / RANGE.base.min) / Math.log(RANGE.base.max / RANGE.base.min);
+  const fromT = (mode, t) => mode === "beat"
+    ? RANGE.beat.min + t * (RANGE.beat.max - RANGE.beat.min)
+    : RANGE.base.min * Math.pow(RANGE.base.max / RANGE.base.min, t);
+  const roundV = (mode, v) => mode === "beat" ? Math.round(v * 10) / 10 : Math.round(v);
+
+  // Instrument: Winkel von -50° bis +50°
+  const meterT = (mode, v) => mode === "beat" ? clamp(v / 30, 0, 1) : clamp(toT("base", v), 0, 1);
+  const PIV = { x: 150, y: 168 };
+  const pol = (r, deg) => { const a = deg * Math.PI / 180; return [PIV.x + r * Math.sin(a), PIV.y - r * Math.cos(a)]; };
+  const ang = t => -50 + 100 * t;
+
+  function el(tag, attrs, parent) { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); parent && parent.appendChild(n); return n; }
+  function arc(r, a1, a2) { const [x1, y1] = pol(r, a1), [x2, y2] = pol(r, a2); return `M${x1} ${y1} A${r} ${r} 0 0 1 ${x2} ${y2}`; }
+  function label(v, a, parent) { const [lx, ly] = pol(152, a); el("text", { x: lx, y: ly + 4, "text-anchor": "middle", "font-family": "IBM Plex Mono, monospace", "font-size": 10, fill: "#26221b" }, parent).textContent = v; }
+
+  function drawScale() {
+    const zones = $("zones"), ticks = $("ticks");
+    zones.innerHTML = ""; ticks.innerHTML = "";
+    const ink = "#26221b";
+    el("path", { d: arc(128, -50, 50), fill: "none", stroke: ink, "stroke-width": 1.2 }, ticks);
+    if (state.mode === "beat") {
+      const Z = [[0.5, 4, "#5f7896", "δ"], [4, 8, "#5f8a63", "θ"], [8, 13, "#b08436", "α"], [13, 30, "#9a5646", "β"]];
+      for (const [a, b, c, g] of Z) {
+        el("path", { d: arc(118, ang(a / 30) + .4, ang(b / 30) - .4), fill: "none", stroke: c, "stroke-width": 6, opacity: .7 }, zones);
+        const [x, y] = pol(104, ang(((a + b) / 2) / 30));
+        el("text", { x, y: y + 4, "text-anchor": "middle", "font-family": "Georgia, serif", "font-style": "italic", "font-size": 13, fill: c }, zones).textContent = g;
+      }
+      for (let v = 0; v <= 30; v++) {
+        const major = v % 5 === 0, a = ang(v / 30);
+        const [x1, y1] = pol(128, a), [x2, y2] = pol(major ? 141 : 135, a);
+        el("line", { x1, y1, x2, y2, stroke: ink, "stroke-width": major ? 1.6 : 0.9 }, ticks);
+        if (major) label(v, a, ticks);
+      }
+      $("faceMode").textContent = "SCHWEBUNG";
+    } else {
+      const vals = [60, 70, 80, 90, 100, 150, 200, 250, 300, 400, 500, 600];
+      const labels = [60, 100, 200, 300, 600];
+      for (const v of vals) {
+        const major = labels.includes(v), a = ang(meterT("base", v));
+        const [x1, y1] = pol(128, a), [x2, y2] = pol(major ? 141 : 135, a);
+        el("line", { x1, y1, x2, y2, stroke: ink, "stroke-width": major ? 1.6 : 0.9 }, ticks);
+        if (major) label(v, a, ticks);
+      }
+      $("faceMode").textContent = "GRUNDTON";
+    }
+  }
+
+  function drawKnobScale() {
+    const s = $("knobScale"); s.innerHTML = "";
+    const n = 28;
+    for (let i = 0; i <= n; i++) {
+      const a = (-135 + 270 * i / n) * Math.PI / 180, major = i % 7 === 0;
+      const r1 = 90, r2 = major ? 99 : 95;
+      el("line", { x1: 100 + r1 * Math.sin(a), y1: 100 - r1 * Math.cos(a), x2: 100 + r2 * Math.sin(a), y2: 100 - r2 * Math.cos(a), stroke: major ? "#a9a395" : "#55524b", "stroke-width": major ? 2 : 1.2, "stroke-linecap": "round" }, s);
+    }
+  }
+
+  // Zeiger mit gedämpfter Feder
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let nAng = ang(meterT(state.mode, state[state.mode])), nVel = 0, nTarget = nAng, raf = 0;
+  const putNeedle = () => $("needle").setAttribute("transform", `rotate(${nAng} ${PIV.x} ${PIV.y})`);
+  function needleLoop() {
+    nVel += (nTarget - nAng) * 0.06; nVel *= 0.82; nAng += nVel; putNeedle();
+    raf = (Math.abs(nTarget - nAng) > 0.02 || Math.abs(nVel) > 0.02) ? requestAnimationFrame(needleLoop) : 0;
+  }
+  function setNeedle() {
+    nTarget = ang(meterT(state.mode, state[state.mode]));
+    if (reduce) { nAng = nTarget; putNeedle(); return; }
+    if (!raf) raf = requestAnimationFrame(needleLoop);
+  }
+
+  // Regler
+  let rot = -135 + 270 * toT(state.mode, state[state.mode]);
+  const knob = $("knob");
+  function render() {
+    $("knobBody").style.transform = `rotate(${rot}deg)`;
+    const r = RANGE[state.mode];
+    knob.setAttribute("aria-valuemin", r.min); knob.setAttribute("aria-valuemax", r.max);
+    knob.setAttribute("aria-valuenow", state[state.mode]);
+    knob.setAttribute("aria-valuetext", state.mode === "beat" ? `${fmt(state.beat)} Hertz Schwebung` : `${state.base} Hertz Grundton`);
+    $("roMain").innerHTML = state.mode === "beat"
+      ? `<strong>${fmt(state.beat)} Hz</strong> Schwebung`
+      : `<strong>${state.base} Hz</strong> Grundton`;
+    $("roLR").textContent = `L ${fmt(state.base - state.beat / 2)} · R ${fmt(state.base + state.beat / 2)} Hz`;
+    setNeedle();
+  }
+  function syncRot() { rot = -135 + 270 * toT(state.mode, state[state.mode]); }
+  function manualTouch() { if (state.prog && state.running) takeOver(); }
+  function setFromRot(r) {
+    manualTouch();
+    rot = clamp(r, -135, 135);
+    state[state.mode] = roundV(state.mode, fromT(state.mode, (rot + 135) / 270));
+    render(); applyFreq(); save();
+  }
+  function setValue(mode, v) {
+    manualTouch();
+    const r = RANGE[mode];
+    state[mode] = roundV(mode, clamp(v, r.min, r.max));
+    if (mode === state.mode) syncRot();
+    render(); applyFreq(); save();
+  }
+
+  let lastA = null;
+  const angleAt = e => { const b = knob.getBoundingClientRect(); return Math.atan2(e.clientX - (b.left + b.width / 2), -(e.clientY - (b.top + b.height / 2))) * 180 / Math.PI; };
+  knob.addEventListener("pointerdown", e => { knob.setPointerCapture(e.pointerId); lastA = angleAt(e); knob.focus({ preventScroll: true }); });
+  knob.addEventListener("pointermove", e => {
+    if (lastA === null) return;
+    const a = angleAt(e); let d = a - lastA; if (d > 180) d -= 360; if (d < -180) d += 360; lastA = a;
+    if (Math.abs(d) > 0.01) setFromRot(rot + d);
+  });
+  const end = () => { lastA = null; };
+  knob.addEventListener("pointerup", end); knob.addEventListener("pointercancel", end);
+  knob.addEventListener("wheel", e => { e.preventDefault(); setValue(state.mode, state[state.mode] + (e.deltaY < 0 ? 1 : -1) * RANGE[state.mode].step * (e.shiftKey ? 10 : 1)); }, { passive: false });
+  knob.addEventListener("keydown", e => {
+    const s = RANGE[state.mode].step; let d = 0;
+    if (e.key === "ArrowUp" || e.key === "ArrowRight") d = s;
+    if (e.key === "ArrowDown" || e.key === "ArrowLeft") d = -s;
+    if (e.key === "PageUp") d = s * 10;
+    if (e.key === "PageDown") d = -s * 10;
+    if (d) { e.preventDefault(); setValue(state.mode, state[state.mode] + d); }
+  });
+
+  function setMode(m) {
+    state.mode = m;
+    $("mBeat").setAttribute("aria-pressed", m === "beat");
+    $("mBase").setAttribute("aria-pressed", m === "base");
+    syncRot(); drawScale(); render();
+  }
+  $("mBeat").onclick = () => setMode("beat");
+  $("mBase").onclick = () => setMode("base");
+  document.querySelectorAll("[data-beat]").forEach(b => b.onclick = () => {
+    if (state.prog && !state.running) selectProg(null);
+    if (state.mode !== "beat") setMode("beat");
+    setValue("beat", +b.dataset.beat);
+  });
+
+  // Programm-Kurven
+  function beatAt(p, t) {
+    let acc = 0;
+    for (const [d, a, b, name] of p.seg) {
+      if (t <= acc + d) { const x = (t - acc) / d; return { beat: a + (b - a) * x, phase: name }; }
+      acc += d;
+    }
+    const last = p.seg[p.seg.length - 1];
+    return { beat: last[2], phase: last[3] };
+  }
+  function curvePath(p) {
+    const W = 100, H = 26, M = 16; let x = 0;
+    const y = b => (H - 2 - (b / M) * (H - 4)).toFixed(1);
+    let d = `M0 ${y(p.seg[0][1])}`;
+    for (const [dur, , b] of p.seg) { x += dur / p.total * W; d += ` L${x.toFixed(1)} ${y(b)}`; }
+    return d;
+  }
+  function curveText(p) {
+    const pts = [p.seg[0][1]]; for (const s of p.seg) if (s[2] !== pts[pts.length - 1]) pts.push(s[2]);
+    return pts.join(" → ") + " Hz";
+  }
+  const progBox = $("progs");
+  for (const p of PROGRAMS) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "prog"; b.dataset.id = p.id; b.setAttribute("aria-pressed", "false");
+    b.innerHTML = `<span class="prog-top"><span class="prog-name">${p.name}</span><span class="prog-dur">${p.total / 60} min</span></span>
+      <svg viewBox="0 0 100 26" preserveAspectRatio="none" aria-hidden="true"><path d="${curvePath(p)}"/></svg>
+      <span class="prog-curve">${curveText(p)}</span>`;
+    b.onclick = () => selectProg(state.prog && state.prog.id === p.id ? null : p);
+    progBox.appendChild(b);
+  }
+  function selectProg(p) {
+    if (state.running) return;
+    state.prog = p;
+    progBox.querySelectorAll(".prog").forEach(b => b.setAttribute("aria-pressed", String(!!p && b.dataset.id === p.id)));
+    $("timer").disabled = !!p;
+    if (p) {
+      if (state.mode !== "beat") setMode("beat");
+      state.base = p.base; state.beat = p.seg[0][1];
+      state.noise = p.noise; $("noise").checked = p.noise;
+      if (noiseGain) noiseGain.gain.setTargetAtTime(p.noise ? 0.35 : 0, ctx.currentTime, 0.4);
+      syncRot(); render(); applyFreq();
+      $("progHint").textContent = "Nochmal tippen zum Abwählen";
+    } else {
+      $("progHint").textContent = "Tippen zum Auswählen";
+    }
+    idleStatus();
+  }
+
+  // Audio
+  let ctx, oscL, oscR, master, noiseGain, routed = false;
+  const out = $("out");
+  function buildAudio() {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const merger = ctx.createChannelMerger(2);
+    oscL = ctx.createOscillator(); oscR = ctx.createOscillator();
+    oscL.type = oscR.type = "sine";
+    oscL.connect(merger, 0, 0); oscR.connect(merger, 0, 1);
+    master = ctx.createGain(); master.gain.value = 0;
+    merger.connect(master);
+    const len = ctx.sampleRate * 4, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    let last = 0; for (let i = 0; i < len; i++) { last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = last * 3.2; }
+    const ns = ctx.createBufferSource(); ns.buffer = buf; ns.loop = true;
+    noiseGain = ctx.createGain(); noiseGain.gain.value = state.noise ? 0.35 : 0;
+    ns.connect(noiseGain); noiseGain.connect(master);
+    oscL.start(); oscR.start(); ns.start();
+    oscL.frequency.value = state.base - state.beat / 2;
+    oscR.frequency.value = state.base + state.beat / 2;
+  }
+  // Ausgabe über <audio>, damit das Betriebssystem die Wiedergabe als Medium führt (Sperrbildschirm). Fallback: direkter Ausgang.
+  function routeOutput() {
+    if (routed) return; routed = true;
+    let ok = false;
+    try {
+      if (ctx.createMediaStreamDestination && out.play) {
+        const dest = ctx.createMediaStreamDestination();
+        master.connect(dest);
+        out.srcObject = dest.stream;
+        ok = true;
+        out.play().catch(() => { try { master.disconnect(dest); } catch (e) {} master.connect(ctx.destination); });
+      }
+    } catch (e) { ok = false; }
+    if (!ok) master.connect(ctx.destination);
+  }
+  function applyFreq() {
+    if (!ctx || (state.prog && state.running)) return;
+    const t = ctx.currentTime;
+    for (const [o, f] of [[oscL, state.base - state.beat / 2], [oscR, state.base + state.beat / 2]]) {
+      o.frequency.cancelScheduledValues(t);
+      o.frequency.setTargetAtTime(f, t, 0.04);
+    }
+  }
+  // Programm komplett im Audio-Thread vorplanen: läuft auch weiter, wenn die Seite gedrosselt wird.
+  function scheduleProgram(p, t0) {
+    for (const [o, sign] of [[oscL, -1], [oscR, 1]]) {
+      const f = o.frequency; f.cancelScheduledValues(t0);
+      f.setValueAtTime(p.base + sign * p.seg[0][1] / 2, t0);
+      let t = t0;
+      for (const [d, , b] of p.seg) { t += d; f.linearRampToValueAtTime(p.base + sign * b / 2, t); }
+    }
+  }
+  const targetGain = () => MAX_GAIN * Math.pow(state.vol / 100, 1.6);
+  let endAt = null;   // Audio-Zeit, zu der ausgeblendet ist
+  function scheduleGain(rampSec) {
+    const g = master.gain, t = ctx.currentTime, v = targetGain();
+    g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
+    if (endAt !== null) {
+      const fs = Math.max(t + 0.05, endAt - FADE_OUT);
+      g.linearRampToValueAtTime(v, Math.min(t + rampSec, fs));
+      g.setValueAtTime(v, fs); g.linearRampToValueAtTime(0, endAt);
+    } else g.linearRampToValueAtTime(v, t + rampSec);
+  }
+
+  let tick = 0, wake = null, stopT = 0, stopping = false, progStart = 0;
+  function idleStatus() {
+    $("stLabel").textContent = state.prog ? `Bereit · ${state.prog.name}` : "Bereit · Manuell";
+    $("clock").textContent = state.prog ? mmss(state.prog.total) : (state.timer ? mmss(state.timer) : "∞");
+    $("stPhase").innerHTML = state.prog ? curveText(state.prog) : "&nbsp;";
+    $("bar").hidden = !state.prog; $("barFill").style.width = "0%";
+  }
+  function liveUpdate() {
+    if (!state.running || !ctx) return;
+    const now = ctx.currentTime;
+    if (state.prog) {
+      const el2 = now - progStart, p = state.prog;
+      const { beat, phase } = beatAt(p, el2);
+      state.beat = Math.round(beat * 10) / 10;
+      if (state.mode === "beat") syncRot();
+      render();
+      $("stPhase").textContent = `${phase} · ${fmt(state.beat)} Hz`;
+      $("barFill").style.width = `${clamp(el2 / p.total * 100, 0, 100)}%`;
+    }
+    if (endAt !== null) {
+      const rem = endAt - now;
+      $("clock").textContent = mmss(rem);
+      if (rem <= 0) finish();
+      else if (rem <= FADE_OUT && !stopping) { stopping = true; $("stLabel").textContent = "Blendet aus"; }
+    }
+  }
+
+  async function start() {
+    if (!ctx) buildAudio();
+    routeOutput();
+    clearTimeout(stopT); stopping = false;
+    out.play && out.play().catch(() => {});
+    await ctx.resume();
+    const t0 = ctx.currentTime;
+    if (state.prog) {
+      progStart = t0; endAt = t0 + state.prog.total;
+      scheduleProgram(state.prog, t0);
+    } else {
+      endAt = state.timer ? t0 + state.timer : null;
+      applyFreq();
+    }
+    state.running = true;
+    scheduleGain(FADE_IN);
+    $("start").classList.add("on"); $("start").textContent = "Stopp"; $("start").setAttribute("aria-pressed", "true");
+    $("meter").classList.add("on");
+    knob.classList.toggle("auto", !!state.prog);
+    $("stLabel").textContent = state.prog ? state.prog.name : "Läuft · Manuell";
+    lockUI(true);
+    clearInterval(tick); tick = setInterval(liveUpdate, 250); liveUpdate();
+    mediaSession();
+    try { wake = await navigator.wakeLock?.request("screen"); } catch (e) {}
+  }
+  function takeOver() {
+    // Programm läuft, Nutzer greift ein: Frequenzen einfrieren, Rest der Zeit als Timer behalten
+    const t = ctx.currentTime;
+    for (const o of [oscL, oscR]) { const v = o.frequency.value; o.frequency.cancelScheduledValues(t); o.frequency.setValueAtTime(v, t); }
+    state.prog = null;
+    progBox.querySelectorAll(".prog").forEach(b => b.setAttribute("aria-pressed", "false"));
+    knob.classList.remove("auto");
+    $("bar").hidden = true; $("stLabel").textContent = "Läuft · Manuell übernommen"; $("stPhase").innerHTML = "&nbsp;";
+    $("timer").disabled = false;
+    lockUI(true);
+    mediaSession();
+  }
+  function stop() {
+    if (!ctx) return;
+    stopping = true;
+    const g = master.gain, t = ctx.currentTime;
+    g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0, t + 3);
+    endAt = t + 3;
+    $("stLabel").textContent = "Blendet aus";
+    clearTimeout(stopT); stopT = setTimeout(finish, 3100);
+  }
+  function finish() {
+    clearInterval(tick); clearTimeout(stopT);
+    state.running = false; stopping = false; endAt = null;
+    if (ctx) { const t = ctx.currentTime; for (const o of [oscL, oscR]) o.frequency.cancelScheduledValues(t); master.gain.cancelScheduledValues(t); master.gain.setValueAtTime(0, t); ctx.suspend(); }
+    out.pause && out.pause();
+    $("start").classList.remove("on"); $("start").textContent = "Start"; $("start").setAttribute("aria-pressed", "false");
+    $("meter").classList.remove("on"); knob.classList.remove("auto");
+    lockUI(false);
+    if (state.prog) { state.beat = state.prog.seg[0][1]; syncRot(); render(); }
+    idleStatus();
+    try { wake && wake.release(); } catch (e) {} wake = null;
+    if ("mediaSession" in navigator) try { navigator.mediaSession.playbackState = "paused"; } catch (e) {}
+  }
+  function lockUI(on) {
+    progBox.querySelectorAll(".prog").forEach(b => b.disabled = on);
+    $("progHint").textContent = on ? "Während der Sitzung gesperrt" : (state.prog ? "Nochmal tippen zum Abwählen" : "Tippen zum Auswählen");
+    $("timer").disabled = on || !!state.prog;
+  }
+  function mediaSession() {
+    if (!("mediaSession" in navigator)) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({ title: state.prog ? state.prog.name : `Schwebung ${fmt(state.beat)} Hz`, artist: "Nada Brahma" });
+      navigator.mediaSession.playbackState = "playing";
+      navigator.mediaSession.setActionHandler("pause", () => stop());
+      navigator.mediaSession.setActionHandler("stop", () => stop());
+      navigator.mediaSession.setActionHandler("play", () => { if (!state.running) start(); });
+    } catch (e) {}
+  }
+  $("start").onclick = () => (state.running && !stopping) ? stop() : (!state.running && start());
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") liveUpdate(); });
+
+  $("vol").value = state.vol;
+  $("vol").oninput = e => { state.vol = +e.target.value; if (ctx && state.running && !stopping) scheduleGain(0.15); save(); };
+  $("timer").value = String(state.timer);
+  $("timer").onchange = e => { state.timer = +e.target.value; save(); if (state.running && ctx) { endAt = state.timer ? ctx.currentTime + state.timer : null; scheduleGain(0.15); liveUpdate(); } else idleStatus(); };
+  $("noise").checked = state.noise;
+  $("noise").onchange = e => { state.noise = e.target.checked; if (ctx) noiseGain.gain.setTargetAtTime(state.noise ? 0.35 : 0, ctx.currentTime, 0.4); save(); };
+
+  drawKnobScale(); drawScale(); render(); idleStatus(); putNeedle();
+
+  // PWA: Service Worker mit Update-Hinweis (nur auf eigener Domain, nicht im eingebetteten Fenster)
+  let inFrame = true; try { inFrame = window.self !== window.top; } catch (e) {}
+  if ("serviceWorker" in navigator && !inFrame && location.protocol === "https:") {
+    navigator.serviceWorker.register("sw.js").then(reg => {
+      const show = w => { if (w && navigator.serviceWorker.controller) { $("update").hidden = false; $("reload").onclick = () => w.postMessage("skip"); } };
+      if (reg.waiting) show(reg.waiting);
+      reg.addEventListener("updatefound", () => { const w = reg.installing; w && w.addEventListener("statechange", () => { if (w.state === "installed") show(w); }); });
+    }).catch(() => {});
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => { if (!reloaded) { reloaded = true; location.reload(); } });
+  }
+})();
+</script>
+</body>
+</html>
