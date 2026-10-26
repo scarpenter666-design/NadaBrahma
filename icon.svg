@@ -1,8 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#18191b"/>
-  <rect x="64" y="120" width="384" height="250" rx="22" fill="#efe5cc"/>
-  <path d="M120 330 A170 170 0 0 1 392 330" fill="none" stroke="#26221b" stroke-width="8"/>
-  <path d="M150 300 A140 140 0 0 1 362 300" fill="none" stroke="#f0a43a" stroke-width="16" opacity=".85"/>
-  <line x1="256" y1="356" x2="318" y2="176" stroke="#c4321d" stroke-width="10" stroke-linecap="round"/>
-  <circle cx="256" cy="356" r="22" fill="#2a2b2e"/>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="32%" r="80%"><stop offset="0" stop-color="#2a2b2f"/><stop offset="1" stop-color="#0f1011"/></radialGradient>
+    <radialGradient id="alu" cx="40%" cy="38%" r="70%"><stop offset="0" stop-color="#f2f2ef"/><stop offset="1" stop-color="#8a8b88"/></radialGradient>
+    <linearGradient id="dim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7e7f7b"/><stop offset="1" stop-color="#dcddd9"/></linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <g fill="none" stroke="#f0a43a" stroke-width="5">
+    <circle cx="256" cy="256" r="177" opacity=".85"/>
+    <circle cx="256" cy="256" r="197" opacity=".5"/>
+    <circle cx="256" cy="256" r="217" opacity=".28"/>
+  </g>
+  <circle cx="256" cy="256" r="154" fill="#2c2d30" stroke="#1b1c1e" stroke-width="20" stroke-dasharray="11 11"/>
+  <circle cx="256" cy="256" r="132" fill="url(#alu)" stroke="#555" stroke-width="2"/>
+  <circle cx="256" cy="177" r="41" fill="url(#dim)" stroke="#6e6f6b" stroke-width="2"/>
+  <rect x="250" y="102" width="12" height="18" rx="2" fill="#f0a43a"/>
 </svg>

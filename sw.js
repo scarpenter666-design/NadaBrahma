@@ -1,6 +1,6 @@
 // Network-First Service Worker. Bei jedem Push die Version hochzählen.
-const VERSION = "nadabrahma-v3";
-const ASSETS = ["./", "./index.html", "./manifest.json", "./icon.svg", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
+const VERSION = "nadabrahma-v4";
+const ASSETS = ["./", "./index.html", "./manifest.json", "./icon.svg", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./icon-maskable-512.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(ASSETS)));
