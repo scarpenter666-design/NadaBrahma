@@ -159,7 +159,8 @@ body {
   box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 2px 3px rgba(0,0,0,.45);
 }
 .prog:last-child:nth-child(odd) { grid-column: 1 / -1; }
-.prog-top { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+.prog-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; column-gap: 8px; row-gap: 2px; }
+.update[hidden] { display: none; }
 .prog-name { font: 600 15px/1.1 var(--f-label); letter-spacing: .04em; }
 .prog-dur { font: 500 11px var(--f-num); color: var(--engrave-dim); white-space: nowrap; }
 .prog-curve { font: 400 11px var(--f-num); color: var(--engrave-dim); }
@@ -200,6 +201,19 @@ select:disabled { opacity: .45; }
 .bar { width: 100%; height: 4px; background: #0b0b0c; border-radius: 2px; overflow: hidden; margin-top: 4px; }
 .bar i { display: block; height: 100%; width: 0; background: var(--amber); box-shadow: 0 0 6px var(--amber-glow); }
 
+.tin-panel {
+  width: 100%; display: flex; flex-direction: column; gap: 10px;
+  padding: 12px; border-radius: 8px; background: #121314; border: 1px solid #000;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.7);
+}
+.tin-panel p { margin: 0; font: 400 12px/1.55 var(--f-num); color: var(--engrave-dim); max-width: 65ch; }
+.tin-panel p b { color: var(--engrave); font-weight: 500; }
+.tin-panel .warn { color: #d4b47c; }
+.tin-panel .key { flex: none; }
+.key.on { color: #1a1408; background: linear-gradient(180deg, #f5b552, #d98a23); box-shadow: 0 0 12px var(--amber-glow); }
+.key.on small { color: #4a3510; }
+.switch button:disabled { opacity: .4; cursor: not-allowed; }
+
 .note {
   width: 100%; font: 400 12px/1.55 var(--f-num); color: var(--engrave-dim);
   border-top: 1px solid #000; padding-top: 14px; max-width: 65ch; margin: 0;
@@ -238,7 +252,7 @@ select:disabled { opacity: .45; }
         <g id="zones"></g>
         <g id="ticks"></g>
         <text id="faceMode" x="150" y="122" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="13" letter-spacing="2.5" fill="#26221b">FREQUENZ</text>
-        <text x="150" y="137" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="500" font-size="11" letter-spacing="1.5" fill="#6b6253">Hz</text>
+        <text x="150" y="137" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="500" font-size="11" letter-spacing="1.5" fill="#6b6253" id="faceUnit">Hz</text>
         <g id="needle">
           <line x1="150" y1="168" x2="150" y2="30" stroke="#c4321d" stroke-width="2" stroke-linecap="round"/>
           <line x1="150" y1="168" x2="150" y2="184" stroke="#26221b" stroke-width="5"/>
@@ -257,6 +271,7 @@ select:disabled { opacity: .45; }
   <div class="switch" role="group" aria-label="Was der Regler einstellt">
     <button type="button" id="mBeat" aria-pressed="true">Frequenz</button>
     <button type="button" id="mBase" aria-pressed="false">Grundton</button>
+    <button type="button" id="mTin" aria-pressed="false">Tinnitus</button>
   </div>
 
   <div class="knob-area">
@@ -268,6 +283,12 @@ select:disabled { opacity: .45; }
       </div>
       <div class="knob-light"></div>
     </div>
+  </div>
+
+  <div class="tin-panel" id="tinPanel" hidden>
+    <button class="key" id="tinTest" type="button" aria-pressed="false">Ton anhören<small>20 Sekunden, leise</small></button>
+    <p><b>Ton finden:</b> Dreh am Regler, bis der Ton deinem Tinnitus ähnelt. Danach das Programm <b>Tinnitus-Entlastung</b> starten. Es spielt sanftes Rauschen, in dem genau dieser Bereich ausgespart ist.</p>
+    <p class="warn">Kein Heilmittel. Stell das Rauschen leiser ein als deinen Tinnitus. Wird es unangenehm, sofort stoppen. Neuer, einseitiger oder pulsierender Tinnitus gehört zum HNO-Arzt.</p>
   </div>
 
   <div class="start-row">
@@ -330,7 +351,8 @@ select:disabled { opacity: .45; }
   const NS = "http://www.w3.org/2000/svg";
   const MAX_GAIN = 0.28;           // harte Obergrenze
   const FADE_IN = 6, FADE_OUT = 8;
-  const RANGE = { beat: { min: 0.5, max: 30, step: 0.1 }, base: { min: 60, max: 600, step: 1 } };
+  const MAX_TIN = 0.2, TEST_MAX = 0.12;   // niedrigere Obergrenzen für Tinnitus
+  const RANGE = { beat: { min: 0.5, max: 30, step: 0.1 }, base: { min: 60, max: 600, step: 1 }, tin: { min: 1000, max: 12000, step: 10 } };
 
   // Programme: Segmente [Dauer s, Frequenz von, bis, Phase]
   const PROGRAMS = [
@@ -339,15 +361,17 @@ select:disabled { opacity: .45; }
     { id: "fokus",  name: "Fokus",            base: 240, noise: false, seg: [[120, 10, 14, "Wachwerden"], [600, 14, 14, "Fokus halten"], [180, 14, 12, "Ausklingen"]] },
     { id: "lang",   name: "Lange Meditation", base: 180, noise: false, seg: [[240, 10, 7, "Absinken"], [360, 7, 5, "Vertiefen"], [360, 5, 5, "Tiefe"], [240, 5, 10, "Auftauchen"]] },
     { id: "schlaf", name: "Einschlafen",      base: 150, noise: true,  seg: [[600, 8, 4, "Abschalten"], [600, 4, 2, "Sinken"], [600, 2, 2, "Schlaf"]] },
+    { id: "tin",    name: "Tinnitus-Entlastung", kind: "tin", noise: false, seg: [[1200, 0, 0, "Rauschen mit Lücke"]] },
   ];
+  const isTin = p => !!p && p.kind === "tin";
   PROGRAMS.forEach(p => p.total = p.seg.reduce((s, x) => s + x[0], 0));
 
-  const state = { mode: "beat", beat: 6, base: 200, vol: 30, timer: 1200, noise: false, running: false, prog: null };
+  const state = { mode: "beat", beat: 6, base: 200, tin: 4000, vol: 30, timer: 1200, noise: false, running: false, prog: null };
   try {
     const saved = JSON.parse(localStorage.getItem("nadabrahma") || "{}");
-    for (const k of ["beat", "base", "vol", "timer", "noise"]) if (k in saved) state[k] = saved[k];
+    for (const k of ["beat", "base", "tin", "vol", "timer", "noise"]) if (k in saved) state[k] = saved[k];
   } catch (e) {}
-  const save = () => { try { localStorage.setItem("nadabrahma", JSON.stringify({ beat: state.beat, base: state.base, vol: state.vol, timer: state.timer, noise: state.noise })); } catch (e) {} };
+  const save = () => { try { localStorage.setItem("nadabrahma", JSON.stringify({ beat: state.beat, base: state.base, tin: state.tin, vol: state.vol, timer: state.timer, noise: state.noise })); } catch (e) {} };
 
   const $ = id => document.getElementById(id);
   const fmt = (v, d = 1) => v.toFixed(d).replace(".", ",");
@@ -355,16 +379,13 @@ select:disabled { opacity: .45; }
   const mmss = s => { s = Math.max(0, Math.round(s)); return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; };
 
   // Wert <-> Reglerstellung (0..1)
-  const toT = (mode, v) => mode === "beat"
-    ? (v - RANGE.beat.min) / (RANGE.beat.max - RANGE.beat.min)
-    : Math.log(v / RANGE.base.min) / Math.log(RANGE.base.max / RANGE.base.min);
-  const fromT = (mode, t) => mode === "beat"
-    ? RANGE.beat.min + t * (RANGE.beat.max - RANGE.beat.min)
-    : RANGE.base.min * Math.pow(RANGE.base.max / RANGE.base.min, t);
-  const roundV = (mode, v) => mode === "beat" ? Math.round(v * 10) / 10 : Math.round(v);
+  const toT = (mode, v) => { const r = RANGE[mode]; return mode === "beat" ? (v - r.min) / (r.max - r.min) : Math.log(v / r.min) / Math.log(r.max / r.min); };
+  const fromT = (mode, t) => { const r = RANGE[mode]; return mode === "beat" ? r.min + t * (r.max - r.min) : r.min * Math.pow(r.max / r.min, t); };
+  const roundV = (mode, v) => mode === "beat" ? Math.round(v * 10) / 10 : mode === "tin" ? Math.round(v / 10) * 10 : Math.round(v);
+  const khz = v => fmt(v / 1000, 2);
 
   // Instrument: Winkel von -50° bis +50°
-  const meterT = (mode, v) => mode === "beat" ? clamp(v / 30, 0, 1) : clamp(toT("base", v), 0, 1);
+  const meterT = (mode, v) => mode === "beat" ? clamp(v / 30, 0, 1) : clamp(toT(mode, v), 0, 1);
   const PIV = { x: 150, y: 168 };
   const pol = (r, deg) => { const a = deg * Math.PI / 180; return [PIV.x + r * Math.sin(a), PIV.y - r * Math.cos(a)]; };
   const ang = t => -50 + 100 * t;
@@ -393,16 +414,18 @@ select:disabled { opacity: .45; }
       }
       $("faceMode").textContent = "FREQUENZ";
     } else {
-      const vals = [60, 70, 80, 90, 100, 150, 200, 250, 300, 400, 500, 600];
-      const labels = [60, 100, 200, 300, 600];
+      const tin = state.mode === "tin";
+      const vals = tin ? [1000, 1500, 2000, 3000, 4000, 5000, 6000, 8000, 10000, 12000] : [60, 70, 80, 90, 100, 150, 200, 250, 300, 400, 500, 600];
+      const labels = tin ? [1000, 2000, 4000, 8000, 12000] : [60, 100, 200, 300, 600];
       for (const v of vals) {
-        const major = labels.includes(v), a = ang(meterT("base", v));
+        const major = labels.includes(v), a = ang(meterT(state.mode, v));
         const [x1, y1] = pol(128, a), [x2, y2] = pol(major ? 141 : 135, a);
         el("line", { x1, y1, x2, y2, stroke: ink, "stroke-width": major ? 1.6 : 0.9 }, ticks);
-        if (major) label(v, a, ticks);
+        if (major) label(tin ? v / 1000 : v, a, ticks);
       }
-      $("faceMode").textContent = "GRUNDTON";
+      $("faceMode").textContent = tin ? "TINNITUS" : "GRUNDTON";
     }
+    $("faceUnit").textContent = state.mode === "tin" ? "kHz" : "Hz";
   }
 
   function drawKnobScale() {
@@ -437,27 +460,33 @@ select:disabled { opacity: .45; }
     const r = RANGE[state.mode];
     knob.setAttribute("aria-valuemin", r.min); knob.setAttribute("aria-valuemax", r.max);
     knob.setAttribute("aria-valuenow", state[state.mode]);
-    knob.setAttribute("aria-valuetext", state.mode === "beat" ? `${fmt(state.beat)} Hertz Frequenz` : `${state.base} Hertz Grundton`);
-    $("roMain").innerHTML = state.mode === "beat"
-      ? `<strong>${fmt(state.beat)} Hz</strong> Frequenz`
-      : `<strong>${state.base} Hz</strong> Grundton`;
-    $("roLR").textContent = `L ${fmt(state.base - state.beat / 2)} · R ${fmt(state.base + state.beat / 2)} Hz`;
+    knob.setAttribute("aria-valuetext", state.mode === "beat" ? `${fmt(state.beat)} Hertz Frequenz` : state.mode === "tin" ? `${khz(state.tin)} Kilohertz Tinnitus-Ton` : `${state.base} Hertz Grundton`);
+    if (state.mode === "tin") {
+      $("roMain").innerHTML = `<strong>${khz(state.tin)} kHz</strong> Tinnitus-Ton`;
+      $("roLR").textContent = `Lücke ${fmt(state.tin / Math.SQRT2 / 1000)}–${fmt(state.tin * Math.SQRT2 / 1000)} kHz`;
+      if (!state.running && isTin(state.prog)) $("stPhase").textContent = `Lücke bei ${khz(state.tin)} kHz`;
+    } else {
+      $("roMain").innerHTML = state.mode === "beat"
+        ? `<strong>${fmt(state.beat)} Hz</strong> Frequenz`
+        : `<strong>${state.base} Hz</strong> Grundton`;
+      $("roLR").textContent = `L ${fmt(state.base - state.beat / 2)} · R ${fmt(state.base + state.beat / 2)} Hz`;
+    }
     setNeedle();
   }
   function syncRot() { rot = -135 + 270 * toT(state.mode, state[state.mode]); }
-  function manualTouch() { if (state.prog && state.running) takeOver(); }
+  function manualTouch() { if (state.prog && state.running && !isTin(state.prog)) takeOver(); }
   function setFromRot(r) {
     manualTouch();
     rot = clamp(r, -135, 135);
     state[state.mode] = roundV(state.mode, fromT(state.mode, (rot + 135) / 270));
-    render(); applyFreq(); save();
+    render(); applyFreq(); applyTin(); save();
   }
   function setValue(mode, v) {
     manualTouch();
     const r = RANGE[mode];
     state[mode] = roundV(mode, clamp(v, r.min, r.max));
     if (mode === state.mode) syncRot();
-    render(); applyFreq(); save();
+    render(); applyFreq(); applyTin(); save();
   }
 
   let lastA = null;
@@ -484,10 +513,14 @@ select:disabled { opacity: .45; }
     state.mode = m;
     $("mBeat").setAttribute("aria-pressed", m === "beat");
     $("mBase").setAttribute("aria-pressed", m === "base");
+    $("mTin").setAttribute("aria-pressed", m === "tin");
+    $("tinPanel").hidden = m !== "tin";
+    if (m !== "tin") stopTest();
     syncRot(); drawScale(); render();
   }
   $("mBeat").onclick = () => setMode("beat");
   $("mBase").onclick = () => setMode("base");
+  $("mTin").onclick = () => setMode("tin");
   document.querySelectorAll("[data-beat]").forEach(b => b.onclick = () => {
     if (state.prog && !state.running) selectProg(null);
     if (state.mode !== "beat") setMode("beat");
@@ -505,6 +538,7 @@ select:disabled { opacity: .45; }
     return { beat: last[2], phase: last[3] };
   }
   function curvePath(p) {
+    if (isTin(p)) return "M0 13 L42 13 M58 13 L100 13";
     const W = 100, H = 26, M = 16; let x = 0;
     const y = b => (H - 2 - (b / M) * (H - 4)).toFixed(1);
     let d = `M0 ${y(p.seg[0][1])}`;
@@ -512,6 +546,7 @@ select:disabled { opacity: .45; }
     return d;
   }
   function curveText(p) {
+    if (isTin(p)) return "Rauschen, Lücke beim Ton";
     const pts = [p.seg[0][1]]; for (const s of p.seg) if (s[2] !== pts[pts.length - 1]) pts.push(s[2]);
     return pts.join(" → ") + " Hz";
   }
@@ -519,7 +554,7 @@ select:disabled { opacity: .45; }
   for (const p of PROGRAMS) {
     const b = document.createElement("button");
     b.type = "button"; b.className = "prog"; b.dataset.id = p.id; b.setAttribute("aria-pressed", "false");
-    b.innerHTML = `<span class="prog-top"><span class="prog-name">${p.name}</span><span class="prog-dur">${p.total / 60} min</span></span>
+    b.innerHTML = `<span class="prog-top"><span class="prog-name">${p.name}</span><span class="prog-dur">${p.total / 60}&nbsp;min</span></span>
       <svg viewBox="0 0 100 26" preserveAspectRatio="none" aria-hidden="true"><path d="${curvePath(p)}"/></svg>
       <span class="prog-curve">${curveText(p)}</span>`;
     b.onclick = () => selectProg(state.prog && state.prog.id === p.id ? null : p);
@@ -530,7 +565,12 @@ select:disabled { opacity: .45; }
     state.prog = p;
     progBox.querySelectorAll(".prog").forEach(b => b.setAttribute("aria-pressed", String(!!p && b.dataset.id === p.id)));
     $("timer").disabled = !!p;
-    if (p) {
+    if (isTin(p)) {
+      if (state.mode !== "tin") setMode("tin");
+      state.noise = false; $("noise").checked = false;
+      if (noiseGain) noiseGain.gain.setTargetAtTime(0, ctx.currentTime, 0.4);
+      $("progHint").textContent = "Nochmal tippen zum Abwählen";
+    } else if (p) {
       if (state.mode !== "beat") setMode("beat");
       state.base = p.base; state.beat = p.seg[0][1];
       state.noise = p.noise; $("noise").checked = p.noise;
@@ -544,7 +584,7 @@ select:disabled { opacity: .45; }
   }
 
   // Audio
-  let ctx, oscL, oscR, master, noiseGain, ns, routed = false;
+  let ctx, oscL, oscR, master, toneGain, noiseGain, ns, tinSrc, tinGain, lp1, lp2, hp1, hp2, oscT, testGain, routed = false;
   const out = $("out");
   function buildAudio() {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -553,13 +593,37 @@ select:disabled { opacity: .45; }
     oscL.type = oscR.type = "sine";
     oscL.connect(merger, 0, 0); oscR.connect(merger, 0, 1);
     master = ctx.createGain(); master.gain.value = 0;
-    merger.connect(master);
+    toneGain = ctx.createGain();
+    merger.connect(toneGain); toneGain.connect(master);
     const len = ctx.sampleRate * 4, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
     let last = 0; for (let i = 0; i < len; i++) { last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = last * 3.2; }
     ns = ctx.createBufferSource(); ns.buffer = buf; ns.loop = true;
     noiseGain = ctx.createGain(); noiseGain.gain.value = state.noise ? 0.35 : 0;
     ns.connect(noiseGain); noiseGain.connect(master);
-    oscL.start(); oscR.start(); ns.start();
+    // Tinnitus: rosa Rauschen (Stereo), ein Oktavband um den Tinnitus-Ton herausgefiltert
+    const pl = ctx.sampleRate * 6, pb = ctx.createBuffer(2, pl, ctx.sampleRate);
+    for (let c = 0; c < 2; c++) {
+      const q = pb.getChannelData(c); let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+      for (let i = 0; i < pl; i++) {
+        const w = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + w * 0.0555179; b1 = 0.99332 * b1 + w * 0.0750759; b2 = 0.969 * b2 + w * 0.153852;
+        b3 = 0.8665 * b3 + w * 0.3104856; b4 = 0.55 * b4 + w * 0.5329522; b5 = -0.7616 * b5 - w * 0.016898;
+        q[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.11; b6 = w * 0.115926;
+      }
+    }
+    tinSrc = ctx.createBufferSource(); tinSrc.buffer = pb; tinSrc.loop = true;
+    const bq = type => { const f = ctx.createBiquadFilter(); f.type = type; f.Q.value = 0.707; return f; };
+    lp1 = bq("lowpass"); lp2 = bq("lowpass"); hp1 = bq("highpass"); hp2 = bq("highpass");
+    tinGain = ctx.createGain(); tinGain.gain.value = 0;
+    tinSrc.connect(lp1); lp1.connect(lp2); lp2.connect(tinGain);
+    tinSrc.connect(hp1); hp1.connect(hp2); hp2.connect(tinGain);
+    tinGain.connect(master);
+    // Testton zum Finden der Tinnitus-Frequenz (beide Ohren, eigene leise Lautstärke)
+    oscT = ctx.createOscillator(); oscT.type = "sine";
+    testGain = ctx.createGain(); testGain.gain.value = 0;
+    oscT.connect(testGain); testGain.connect(ctx.destination);
+    oscL.start(); oscR.start(); ns.start(); tinSrc.start(); oscT.start();
+    applyTin(true);
     oscL.frequency.value = state.base - state.beat / 2;
     oscR.frequency.value = state.base + state.beat / 2;
   }
@@ -585,6 +649,45 @@ select:disabled { opacity: .45; }
       o.frequency.setTargetAtTime(f, t, 0.04);
     }
   }
+  function applyTin(now) {
+    if (!ctx) return;
+    const t = ctx.currentTime, tc = now ? 0.001 : 0.05, f = state.tin;
+    lp1.frequency.setTargetAtTime(f / Math.SQRT2, t, tc); lp2.frequency.setTargetAtTime(f / Math.SQRT2, t, tc);
+    hp1.frequency.setTargetAtTime(f * Math.SQRT2, t, tc); hp2.frequency.setTargetAtTime(f * Math.SQRT2, t, tc);
+    oscT.frequency.setTargetAtTime(f, t, tc);
+  }
+  function setVoices(tin) {
+    const t = ctx.currentTime;
+    for (const [g, v] of [[toneGain, tin ? 0 : 1], [noiseGain, tin ? 0 : (state.noise ? 0.35 : 0)], [tinGain, tin ? 1 : 0]]) {
+      g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(v, t);
+    }
+  }
+  // Testton
+  let testing = false, testT = 0;
+  const testLevel = () => TEST_MAX * Math.pow(state.vol / 100, 1.6);
+  async function startTest() {
+    if (state.running || testing) return;
+    if (!ctx) buildAudio();
+    routeOutput();
+    testing = true;
+    await ctx.resume(); applyTin(true);
+    const g = testGain.gain, t = ctx.currentTime;
+    g.cancelScheduledValues(t); g.setValueAtTime(0, t); g.linearRampToValueAtTime(testLevel(), t + 0.4);
+    $("tinTest").classList.add("on"); $("tinTest").setAttribute("aria-pressed", "true");
+    $("tinTest").firstChild.textContent = "Ton stoppen";
+    clearTimeout(testT); testT = setTimeout(stopTest, 20000);
+  }
+  function stopTest() {
+    if (!testing) return;
+    testing = false; clearTimeout(testT);
+    const g = testGain.gain, t = ctx.currentTime;
+    g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0, t + 0.4);
+    $("tinTest").classList.remove("on"); $("tinTest").setAttribute("aria-pressed", "false");
+    $("tinTest").firstChild.textContent = "Ton anhören";
+    setTimeout(() => { if (!state.running && !testing && ctx) ctx.suspend(); }, 600);
+  }
+  $("tinTest").onclick = () => testing ? stopTest() : startTest();
+
   // Programm komplett im Audio-Thread vorplanen: läuft auch weiter, wenn die Seite gedrosselt wird.
   function scheduleProgram(p, t0) {
     for (const [o, sign] of [[oscL, -1], [oscR, 1]]) {
@@ -594,7 +697,7 @@ select:disabled { opacity: .45; }
       for (const [d, , b] of p.seg) { t += d; f.linearRampToValueAtTime(p.base + sign * b / 2, t); }
     }
   }
-  const targetGain = () => MAX_GAIN * Math.pow(state.vol / 100, 1.6);
+  const targetGain = () => (isTin(state.prog) ? MAX_TIN : MAX_GAIN) * Math.pow(state.vol / 100, 1.6);
   let endAt = null;   // Audio-Zeit, zu der ausgeblendet ist
   function scheduleGain(rampSec) {
     const g = master.gain, t = ctx.currentTime, v = targetGain();
@@ -610,7 +713,7 @@ select:disabled { opacity: .45; }
   function idleStatus() {
     $("stLabel").textContent = state.prog ? `Bereit · ${state.prog.name}` : "Bereit · Manuell";
     $("clock").textContent = state.prog ? mmss(state.prog.total) : (state.timer ? mmss(state.timer) : "∞");
-    $("stPhase").innerHTML = state.prog ? curveText(state.prog) : "&nbsp;";
+    $("stPhase").innerHTML = isTin(state.prog) ? `Lücke bei ${khz(state.tin)} kHz` : state.prog ? curveText(state.prog) : "&nbsp;";
     $("bar").hidden = !state.prog; $("barFill").style.width = "0%";
   }
   function liveUpdate() {
@@ -618,11 +721,15 @@ select:disabled { opacity: .45; }
     const now = ctx.currentTime;
     if (state.prog) {
       const el2 = now - progStart, p = state.prog;
-      const { beat, phase } = beatAt(p, el2);
-      state.beat = Math.round(beat * 10) / 10;
-      if (state.mode === "beat") syncRot();
-      render();
-      $("stPhase").textContent = `${phase} · ${fmt(state.beat)} Hz`;
+      if (isTin(p)) {
+        $("stPhase").textContent = `Rauschen · Lücke bei ${khz(state.tin)} kHz`;
+      } else {
+        const { beat, phase } = beatAt(p, el2);
+        state.beat = Math.round(beat * 10) / 10;
+        if (state.mode === "beat") syncRot();
+        render();
+        $("stPhase").textContent = `${phase} · ${fmt(state.beat)} Hz`;
+      }
       $("barFill").style.width = `${clamp(el2 / p.total * 100, 0, 100)}%`;
     }
     if (endAt !== null) {
@@ -637,12 +744,14 @@ select:disabled { opacity: .45; }
     if (!ctx) buildAudio();
     routeOutput();
     clearTimeout(stopT); stopping = false;
+    stopTest();
     out.play && out.play().catch(() => {});
     await ctx.resume();
     const t0 = ctx.currentTime;
+    setVoices(isTin(state.prog)); applyTin(true);
     if (state.prog) {
       progStart = t0; endAt = t0 + state.prog.total;
-      scheduleProgram(state.prog, t0);
+      if (!isTin(state.prog)) scheduleProgram(state.prog, t0);
     } else {
       endAt = state.timer ? t0 + state.timer : null;
       applyFreq();
@@ -651,7 +760,7 @@ select:disabled { opacity: .45; }
     scheduleGain(FADE_IN);
     $("start").classList.add("on"); $("start").textContent = "Stopp"; $("start").setAttribute("aria-pressed", "true");
     $("meter").classList.add("on");
-    knob.classList.toggle("auto", !!state.prog);
+    knob.classList.toggle("auto", !!state.prog && !isTin(state.prog));
     $("stLabel").textContent = state.prog ? state.prog.name : "Läuft · Manuell";
     lockUI(true);
     clearInterval(tick); tick = setInterval(liveUpdate, 250); liveUpdate();
@@ -687,7 +796,7 @@ select:disabled { opacity: .45; }
     $("start").classList.remove("on"); $("start").textContent = "Start"; $("start").setAttribute("aria-pressed", "false");
     $("meter").classList.remove("on"); knob.classList.remove("auto");
     lockUI(false);
-    if (state.prog) { state.beat = state.prog.seg[0][1]; syncRot(); render(); }
+    if (state.prog && !isTin(state.prog)) { state.beat = state.prog.seg[0][1]; syncRot(); render(); }
     idleStatus();
     try { wake && wake.release(); } catch (e) {} wake = null;
     if ("mediaSession" in navigator) try { navigator.mediaSession.playbackState = "paused"; } catch (e) {}
@@ -696,6 +805,10 @@ select:disabled { opacity: .45; }
     progBox.querySelectorAll(".prog").forEach(b => b.disabled = on);
     $("progHint").textContent = on ? "Während der Sitzung gesperrt" : (state.prog ? "Nochmal tippen zum Abwählen" : "Tippen zum Auswählen");
     $("timer").disabled = on || !!state.prog;
+    const tinRun = on && isTin(state.prog);
+    for (const id of ["mBeat", "mBase", "noise"]) $(id).disabled = tinRun;
+    document.querySelectorAll("[data-beat]").forEach(b => b.disabled = tinRun);
+    $("tinTest").disabled = on;
   }
   function mediaSession() {
     if (!("mediaSession" in navigator)) return;
@@ -711,7 +824,12 @@ select:disabled { opacity: .45; }
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") liveUpdate(); });
 
   $("vol").value = state.vol;
-  $("vol").oninput = e => { state.vol = +e.target.value; if (ctx && state.running && !stopping) scheduleGain(0.15); save(); };
+  $("vol").oninput = e => {
+    state.vol = +e.target.value;
+    if (ctx && state.running && !stopping) scheduleGain(0.15);
+    if (ctx && testing) testGain.gain.setTargetAtTime(testLevel(), ctx.currentTime, 0.05);
+    save();
+  };
   $("timer").value = String(state.timer);
   $("timer").onchange = e => { state.timer = +e.target.value; save(); if (state.running && ctx) { endAt = state.timer ? ctx.currentTime + state.timer : null; scheduleGain(0.15); liveUpdate(); } else idleStatus(); };
   $("noise").checked = state.noise;
