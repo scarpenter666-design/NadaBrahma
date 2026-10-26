@@ -237,7 +237,7 @@ select:disabled { opacity: .45; }
         <rect width="300" height="168" fill="url(#faceGrad)"/>
         <g id="zones"></g>
         <g id="ticks"></g>
-        <text id="faceMode" x="150" y="122" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="13" letter-spacing="2.5" fill="#26221b">SCHWEBUNG</text>
+        <text id="faceMode" x="150" y="122" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="13" letter-spacing="2.5" fill="#26221b">FREQUENZ</text>
         <text x="150" y="137" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="500" font-size="11" letter-spacing="1.5" fill="#6b6253">Hz</text>
         <g id="needle">
           <line x1="150" y1="168" x2="150" y2="30" stroke="#c4321d" stroke-width="2" stroke-linecap="round"/>
@@ -249,13 +249,13 @@ select:disabled { opacity: .45; }
       </svg>
     </div>
     <div class="readout">
-      <span id="roMain"><strong>6,0 Hz</strong> Schwebung</span>
+      <span id="roMain"><strong>6,0 Hz</strong> Frequenz</span>
       <span id="roLR">L 197,0 · R 203,0 Hz</span>
     </div>
   </div>
 
   <div class="switch" role="group" aria-label="Was der Regler einstellt">
-    <button type="button" id="mBeat" aria-pressed="true">Schwebung</button>
+    <button type="button" id="mBeat" aria-pressed="true">Frequenz</button>
     <button type="button" id="mBase" aria-pressed="false">Grundton</button>
   </div>
 
@@ -286,7 +286,7 @@ select:disabled { opacity: .45; }
   </section>
 
   <section class="section" aria-labelledby="manHead">
-    <div class="section-head"><h2 id="manHead">Manuell</h2><span>feste Schwebung</span></div>
+    <div class="section-head"><h2 id="manHead">Manuell</h2><span>feste Frequenz</span></div>
     <div class="row" role="group" aria-label="Voreinstellungen">
       <button class="key" type="button" data-beat="2">δ 2 Hz<small>Delta</small></button>
       <button class="key" type="button" data-beat="6">θ 6 Hz<small>Theta</small></button>
@@ -318,7 +318,7 @@ select:disabled { opacity: .45; }
   </div>
 
   <p class="note">
-    <b>Kopfhörer aufsetzen, leise beginnen.</b> Links und rechts laufen zwei leicht verschiedene Töne. Die Differenz nimmst du als langsames Pulsieren wahr, die Schwebung. Ohne Kopfhörer funktioniert das nicht. Programme verändern die Schwebung langsam über die Zeit. Drehst du während eines Programms am Regler, übernimmst du manuell.
+    <b>Kopfhörer aufsetzen, leise beginnen.</b> Links und rechts laufen zwei leicht verschiedene Töne. Die Differenz nimmst du als langsames Pulsieren wahr. Das ist die eingestellte Frequenz. Ohne Kopfhörer funktioniert das nicht. Programme verändern die Frequenz langsam über die Zeit. Drehst du während eines Programms am Regler, übernimmst du manuell.
   </p>
 </div>
 
@@ -332,7 +332,7 @@ select:disabled { opacity: .45; }
   const FADE_IN = 6, FADE_OUT = 8;
   const RANGE = { beat: { min: 0.5, max: 30, step: 0.1 }, base: { min: 60, max: 600, step: 1 } };
 
-  // Programme: Segmente [Dauer s, Schwebung von, bis, Phase]
+  // Programme: Segmente [Dauer s, Frequenz von, bis, Phase]
   const PROGRAMS = [
     { id: "pause",  name: "Kurze Pause",      base: 220, noise: false, seg: [[60, 12, 10, "Ankommen"], [180, 10, 10, "Ruhen"], [60, 10, 12, "Zurückkommen"]] },
     { id: "tief",   name: "Tiefenmeditation", base: 200, noise: false, seg: [[180, 10, 6, "Absinken"], [300, 6, 6, "Tiefe"], [120, 6, 10, "Auftauchen"]] },
@@ -391,7 +391,7 @@ select:disabled { opacity: .45; }
         el("line", { x1, y1, x2, y2, stroke: ink, "stroke-width": major ? 1.6 : 0.9 }, ticks);
         if (major) label(v, a, ticks);
       }
-      $("faceMode").textContent = "SCHWEBUNG";
+      $("faceMode").textContent = "FREQUENZ";
     } else {
       const vals = [60, 70, 80, 90, 100, 150, 200, 250, 300, 400, 500, 600];
       const labels = [60, 100, 200, 300, 600];
@@ -437,9 +437,9 @@ select:disabled { opacity: .45; }
     const r = RANGE[state.mode];
     knob.setAttribute("aria-valuemin", r.min); knob.setAttribute("aria-valuemax", r.max);
     knob.setAttribute("aria-valuenow", state[state.mode]);
-    knob.setAttribute("aria-valuetext", state.mode === "beat" ? `${fmt(state.beat)} Hertz Schwebung` : `${state.base} Hertz Grundton`);
+    knob.setAttribute("aria-valuetext", state.mode === "beat" ? `${fmt(state.beat)} Hertz Frequenz` : `${state.base} Hertz Grundton`);
     $("roMain").innerHTML = state.mode === "beat"
-      ? `<strong>${fmt(state.beat)} Hz</strong> Schwebung`
+      ? `<strong>${fmt(state.beat)} Hz</strong> Frequenz`
       : `<strong>${state.base} Hz</strong> Grundton`;
     $("roLR").textContent = `L ${fmt(state.base - state.beat / 2)} · R ${fmt(state.base + state.beat / 2)} Hz`;
     setNeedle();
@@ -544,7 +544,7 @@ select:disabled { opacity: .45; }
   }
 
   // Audio
-  let ctx, oscL, oscR, master, noiseGain, routed = false;
+  let ctx, oscL, oscR, master, noiseGain, ns, routed = false;
   const out = $("out");
   function buildAudio() {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -556,27 +556,26 @@ select:disabled { opacity: .45; }
     merger.connect(master);
     const len = ctx.sampleRate * 4, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
     let last = 0; for (let i = 0; i < len; i++) { last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = last * 3.2; }
-    const ns = ctx.createBufferSource(); ns.buffer = buf; ns.loop = true;
+    ns = ctx.createBufferSource(); ns.buffer = buf; ns.loop = true;
     noiseGain = ctx.createGain(); noiseGain.gain.value = state.noise ? 0.35 : 0;
     ns.connect(noiseGain); noiseGain.connect(master);
     oscL.start(); oscR.start(); ns.start();
     oscL.frequency.value = state.base - state.beat / 2;
     oscR.frequency.value = state.base + state.beat / 2;
   }
-  // Ausgabe über <audio>, damit das Betriebssystem die Wiedergabe als Medium führt (Sperrbildschirm). Fallback: direkter Ausgang.
+  // Ton geht direkt an den Ausgang. Ein stummer <audio>-Loop daneben meldet dem Betriebssystem "Medienwiedergabe" (Sperrbildschirm, Media-Session).
+  function silentWav() {
+    const rate = 8000, n = rate, b = new ArrayBuffer(44 + n * 2), v = new DataView(b);
+    const w = (o, str) => { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+    w(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); w(8, "WAVE"); w(12, "fmt "); v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true);
+    v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, "data"); v.setUint32(40, n * 2, true);
+    return URL.createObjectURL(new Blob([b], { type: "audio/wav" }));
+  }
   function routeOutput() {
     if (routed) return; routed = true;
-    let ok = false;
-    try {
-      if (ctx.createMediaStreamDestination && out.play) {
-        const dest = ctx.createMediaStreamDestination();
-        master.connect(dest);
-        out.srcObject = dest.stream;
-        ok = true;
-        out.play().catch(() => { try { master.disconnect(dest); } catch (e) {} master.connect(ctx.destination); });
-      }
-    } catch (e) { ok = false; }
-    if (!ok) master.connect(ctx.destination);
+    master.connect(ctx.destination);
+    try { out.src = silentWav(); out.loop = true; } catch (e) {}
   }
   function applyFreq() {
     if (!ctx || (state.prog && state.running)) return;
@@ -701,7 +700,7 @@ select:disabled { opacity: .45; }
   function mediaSession() {
     if (!("mediaSession" in navigator)) return;
     try {
-      navigator.mediaSession.metadata = new MediaMetadata({ title: state.prog ? state.prog.name : `Schwebung ${fmt(state.beat)} Hz`, artist: "Nada Brahma" });
+      navigator.mediaSession.metadata = new MediaMetadata({ title: state.prog ? state.prog.name : `Frequenz ${fmt(state.beat)} Hz`, artist: "Nada Brahma" });
       navigator.mediaSession.playbackState = "playing";
       navigator.mediaSession.setActionHandler("pause", () => stop());
       navigator.mediaSession.setActionHandler("stop", () => stop());
@@ -724,12 +723,13 @@ select:disabled { opacity: .45; }
   let inFrame = true; try { inFrame = window.self !== window.top; } catch (e) {}
   if ("serviceWorker" in navigator && !inFrame && location.protocol === "https:") {
     navigator.serviceWorker.register("sw.js").then(reg => {
-      const show = w => { if (w && navigator.serviceWorker.controller) { $("update").hidden = false; $("reload").onclick = () => w.postMessage("skip"); } };
+      const show = w => { if (w && navigator.serviceWorker.controller) { $("update").hidden = false; $("reload").onclick = () => { userReload = true; w.postMessage("skip"); }; } };
       if (reg.waiting) show(reg.waiting);
       reg.addEventListener("updatefound", () => { const w = reg.installing; w && w.addEventListener("statechange", () => { if (w.state === "installed") show(w); }); });
     }).catch(() => {});
-    let reloaded = false;
-    navigator.serviceWorker.addEventListener("controllerchange", () => { if (!reloaded) { reloaded = true; location.reload(); } });
+    // Nur neu laden, wenn du "Neu laden" getippt hast. Sonst würde der erste Start die laufende Sitzung abbrechen.
+    let reloaded = false, userReload = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => { if (userReload && !reloaded) { reloaded = true; location.reload(); } });
   }
 })();
 </script>

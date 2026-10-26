@@ -1,5 +1,5 @@
 // Network-First Service Worker. Bei jedem Push die Version hochzählen.
-const VERSION = "nadabrahma-v1";
+const VERSION = "nadabrahma-v2";
 const ASSETS = ["./", "./index.html", "./manifest.json", "./icon.svg", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
